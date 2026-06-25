@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Ledger — Register</title>
+    <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="auth-screen">
+    <div class="auth-card">
+        <h1>§ Ledger</h1>
+        <p>Track income and expenses in one place.</p>
+        <div class="error-banner" id="error" style="display:none;"></div>
+        <form onsubmit="handleRegister">
+            <div class="field">
+                <label for="name">Name</label>
+                <input id="name" type="text" required placeholder="Your name"/>
+            </div>
+            <div class="field">
+                <label for="email">Email</label>
+                <input id="email" type="email" required placeholder="you@example.com"/>
+            </div>
+            <div class="field">
+                <label for="password">Password</label>
+                <input id="password" type="password" required placeholder="Min 6 characters"/>
+            </div>
+            <button type="submit" class="btn-primary">Create account</button>
+        </form>
+        <p style="text-align:center;margin-top:20px;font-size:13px;color:#8a8f8d;">
+            Already have an account? <a href="index.html">Sign in</a>
+        </p>
+    </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>

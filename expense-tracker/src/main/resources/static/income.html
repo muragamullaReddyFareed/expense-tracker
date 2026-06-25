@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Ledger — Income</title>
+    <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<header class="navbar">
+    <div class="navbar__brand"><span>§</span> Ledger</div>
+    <nav class="navbar__links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="income.html" class="active">Income</a>
+        <a href="expenses.html">Expenses</a>
+    </nav>
+    <div class="navbar__user">
+        <span id="userName"></span>
+        <button class="btn-ghost" onclick="logout()">Sign out</button>
+    </div>
+</header>
+
+<main class="page">
+    <div class="page-header">
+        <h1>Income</h1>
+        <p>Log money coming in — salary, freelance, gifts, anything.</p>
+    </div>
+
+    <div class="transaction-form">
+        <div class="error-banner" id="formError" style="display:none;"></div>
+        <div class="form-row">
+            <div class="field">
+                <label for="category">Category</label>
+                <select id="category">
+                    <option>Salary</option>
+                    <option>Freelance</option>
+                    <option>Investment</option>
+                    <option>Gift</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="amount">Amount (₹)</label>
+                <input id="amount" type="number" min="0.01" step="0.01" placeholder="0.00"/>
+            </div>
+            <div class="field">
+                <label for="date">Date</label>
+                <input id="date" type="date"/>
+            </div>
+        </div>
+        <div class="field">
+            <label for="description">Note (optional)</label>
+            <input id="description" type="text" placeholder="e.g. June salary"/>
+        </div>
+        <button class="btn-income" onclick="addIncome()">Add income</button>
+    </div>
+
+    <div id="incomeList"></div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/income.js"></script>
+</body>
+</html>
