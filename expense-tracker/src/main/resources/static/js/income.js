@@ -1,89 +1,116 @@
-if (!localStorage.getItem('token')) window.location.href = 'index.html';
+if (!requireAuth()) throw new Error('Not authenticated');
+setUserName();
 
-const user = JSON.parse(localStorage.getItem('user') || '{}');
-document.getElementById('userName').textContent = user.name || '';
-document.getElementById('date').value = new Date().toISOString().split('T')[0];
-
-const fmt     = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
-const dateFmt = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
 
 let incomeItems = [];
 
-async function loadIncome() {
+async function loadCategories() {
     try {
-        incomeItems = await transactionApi.getIncome();
+        const cats = await categoryApi.getByType('INCOME');
+        const select       = document.getElementById('category');
+        const filterSelect = document.getElementById('filterCategory');
+        const defaults = ['Salary','Freelance','Investment','Business','Rental','Gift','Bonus','Other'];
+        const allCats  = [...new Set([...defaults, ...cats.map(c => c.name)])];
+        select.innerHTML       = allCats.map(c => `<option value="${c}">${c}</option>`).join('');
+        filterSelect.innerHTML = '<option value="">All Categories</option>' +
+            allCats.map(c => `<option value="${c}">${c}</option>`).join('');
+    } catch (err) { console.error('Could not load categories'); }
+}
+
+async function loadIncome(params = {}) {
+    document.getElementById('loadingMsg').style.display = 'block';
+    document.getElementById('incomeList').innerHTML = '';
+    try {
+        incomeItems = await transactionApi.getIncome(buildQueryString(params));
         renderIncome();
     } catch (err) {
         document.getElementById('incomeList').innerHTML =
-            '<div class="error-banner">Could not load income entries.</div>';
+            '<div class="error-banner" style="margin:16px 20px">Could not load income entries.</div>';
+    } finally {
+        document.getElementById('loadingMsg').style.display = 'none';
     }
 }
 
 function renderIncome() {
     const container = document.getElementById('incomeList');
-    if (incomeItems.length === 0) {
+    document.getElementById('resultCount').textContent = incomeItems.length + ' entries';
+    if (!incomeItems.length) {
         container.innerHTML = `
-      <div class="ledger">
-        <div class="empty-state">
-          <p>No income logged yet.</p>
-          <span>Entries you add above will show up here.</span>
-        </div>
+      <div class="empty-state">
+        <div class="empty-state__icon">📭</div>
+        <p>No income entries found</p>
+        <span>Try adjusting your filters or add a new entry above.</span>
       </div>`;
         return;
     }
-    const rows = incomeItems.map(item => `
-    <tr>
-      <td>${dateFmt.format(new Date(item.transactionDate))}</td>
-      <td><span class="category-badge">${item.category}</span></td>
-      <td style="color:#8a8f8d">${item.description || '—'}</td>
-      <td class="amount income">+ ${fmt.format(item.amount)}</td>
-      <td><button class="btn-remove" onclick="removeIncome(${item.id})">Remove</button></td>
-    </tr>`).join('');
     container.innerHTML = `
-    <div class="ledger">
-      <table>
-        <thead>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Category</th><th>Note</th><th class="amount">Amount</th><th></th></tr>
+      </thead>
+      <tbody>
+        ${incomeItems.map(item => `
           <tr>
-            <th>Date</th><th>Category</th>
-            <th>Note</th><th class="amount">Amount</th><th></th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+            <td>${formatDate(item.transactionDate)}</td>
+            <td><span class="category-pill">${item.category}</span></td>
+            <td class="desc-text">${item.description || '—'}</td>
+            <td class="amount income">+ ${fmt.format(item.amount)}</td>
+            <td><button class="btn-danger" onclick="removeIncome(${item.id})">Remove</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
 }
 
 async function addIncome() {
-    const errEl  = document.getElementById('formError');
-    errEl.style.display = 'none';
+    hideError('formError');
     const amount = parseFloat(document.getElementById('amount').value);
-    if (!amount || amount <= 0) {
-        errEl.textContent = 'Enter an amount greater than 0';
-        errEl.style.display = 'block';
-        return;
-    }
+    if (!amount || amount <= 0) { showError('formError', 'Enter an amount greater than 0'); return; }
     const payload = {
         category:        document.getElementById('category').value,
         amount,
-        description:     document.getElementById('description').value,
-        transactionDate: document.getElementById('date').value,
+        description:     document.getElementById('description').value.trim(),
+        transactionDate: document.getElementById('txDate').value,
     };
     try {
-        const created = await transactionApi.addIncome(payload);
-        incomeItems.unshift(created);
-        renderIncome();
-        document.getElementById('amount').value      = '';
+        const btn = document.getElementById('addBtn');
+        btn.disabled = true; btn.textContent = 'Saving…';
+        await transactionApi.addIncome(payload);
+        document.getElementById('amount').value = '';
         document.getElementById('description').value = '';
+        await loadIncome();
     } catch (err) {
-        errEl.textContent   = err.message || 'Could not save entry';
-        errEl.style.display = 'block';
+        showError('formError', err.message || 'Could not save entry');
+    } finally {
+        const btn = document.getElementById('addBtn');
+        btn.disabled = false; btn.textContent = '+ Add Income';
     }
 }
 
 async function removeIncome(id) {
-    await transactionApi.deleteById(id);
-    incomeItems = incomeItems.filter(i => i.id !== id);
-    renderIncome();
+    if (!confirm('Remove this income entry?')) return;
+    try {
+        await transactionApi.deleteById(id);
+        incomeItems = incomeItems.filter(i => i.id !== id);
+        renderIncome();
+    } catch (err) { alert('Could not remove entry'); }
 }
 
+async function applyFilters() {
+    await loadIncome({
+        keyword:   document.getElementById('search').value.trim(),
+        category:  document.getElementById('filterCategory').value,
+        startDate: document.getElementById('startDate').value,
+        endDate:   document.getElementById('endDate').value,
+    });
+}
+
+function clearFilters() {
+    ['search','filterCategory','startDate','endDate'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    loadIncome();
+}
+
+loadCategories();
 loadIncome();

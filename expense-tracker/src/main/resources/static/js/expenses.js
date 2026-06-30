@@ -1,89 +1,116 @@
-if (!localStorage.getItem('token')) window.location.href = 'index.html';
+if (!requireAuth()) throw new Error('Not authenticated');
+setUserName();
 
-const user = JSON.parse(localStorage.getItem('user') || '{}');
-document.getElementById('userName').textContent = user.name || '';
-document.getElementById('date').value = new Date().toISOString().split('T')[0];
-
-const fmt     = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
-const dateFmt = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
 
 let expenseItems = [];
 
-async function loadExpenses() {
+async function loadCategories() {
     try {
-        expenseItems = await transactionApi.getExpenses();
+        const cats = await categoryApi.getByType('EXPENSE');
+        const select       = document.getElementById('category');
+        const filterSelect = document.getElementById('filterCategory');
+        const defaults = ['Groceries','Rent','Utilities','Transport','Entertainment','Healthcare','Education','Shopping','Food','Other'];
+        const allCats  = [...new Set([...defaults, ...cats.map(c => c.name)])];
+        select.innerHTML       = allCats.map(c => `<option value="${c}">${c}</option>`).join('');
+        filterSelect.innerHTML = '<option value="">All Categories</option>' +
+            allCats.map(c => `<option value="${c}">${c}</option>`).join('');
+    } catch (err) { console.error('Could not load categories'); }
+}
+
+async function loadExpenses(params = {}) {
+    document.getElementById('loadingMsg').style.display = 'block';
+    document.getElementById('expenseList').innerHTML = '';
+    try {
+        expenseItems = await transactionApi.getExpenses(buildQueryString(params));
         renderExpenses();
     } catch (err) {
         document.getElementById('expenseList').innerHTML =
-            '<div class="error-banner">Could not load expense entries.</div>';
+            '<div class="error-banner" style="margin:16px 20px">Could not load expense entries.</div>';
+    } finally {
+        document.getElementById('loadingMsg').style.display = 'none';
     }
 }
 
 function renderExpenses() {
     const container = document.getElementById('expenseList');
-    if (expenseItems.length === 0) {
+    document.getElementById('resultCount').textContent = expenseItems.length + ' entries';
+    if (!expenseItems.length) {
         container.innerHTML = `
-      <div class="ledger">
-        <div class="empty-state">
-          <p>No expenses logged yet.</p>
-          <span>Entries you add above will show up here.</span>
-        </div>
+      <div class="empty-state">
+        <div class="empty-state__icon">📭</div>
+        <p>No expense entries found</p>
+        <span>Try adjusting your filters or add a new entry above.</span>
       </div>`;
         return;
     }
-    const rows = expenseItems.map(item => `
-    <tr>
-      <td>${dateFmt.format(new Date(item.transactionDate))}</td>
-      <td><span class="category-badge">${item.category}</span></td>
-      <td style="color:#8a8f8d">${item.description || '—'}</td>
-      <td class="amount expense">− ${fmt.format(item.amount)}</td>
-      <td><button class="btn-remove" onclick="removeExpense(${item.id})">Remove</button></td>
-    </tr>`).join('');
     container.innerHTML = `
-    <div class="ledger">
-      <table>
-        <thead>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Category</th><th>Note</th><th class="amount">Amount</th><th></th></tr>
+      </thead>
+      <tbody>
+        ${expenseItems.map(item => `
           <tr>
-            <th>Date</th><th>Category</th>
-            <th>Note</th><th class="amount">Amount</th><th></th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+            <td>${formatDate(item.transactionDate)}</td>
+            <td><span class="category-pill">${item.category}</span></td>
+            <td class="desc-text">${item.description || '—'}</td>
+            <td class="amount expense">− ${fmt.format(item.amount)}</td>
+            <td><button class="btn-danger" onclick="removeExpense(${item.id})">Remove</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
 }
 
 async function addExpense() {
-    const errEl  = document.getElementById('formError');
-    errEl.style.display = 'none';
+    hideError('formError');
     const amount = parseFloat(document.getElementById('amount').value);
-    if (!amount || amount <= 0) {
-        errEl.textContent = 'Enter an amount greater than 0';
-        errEl.style.display = 'block';
-        return;
-    }
+    if (!amount || amount <= 0) { showError('formError', 'Enter an amount greater than 0'); return; }
     const payload = {
         category:        document.getElementById('category').value,
         amount,
-        description:     document.getElementById('description').value,
-        transactionDate: document.getElementById('date').value,
+        description:     document.getElementById('description').value.trim(),
+        transactionDate: document.getElementById('txDate').value,
     };
     try {
-        const created = await transactionApi.addExpense(payload);
-        expenseItems.unshift(created);
-        renderExpenses();
-        document.getElementById('amount').value      = '';
+        const btn = document.getElementById('addBtn');
+        btn.disabled = true; btn.textContent = 'Saving…';
+        await transactionApi.addExpense(payload);
+        document.getElementById('amount').value = '';
         document.getElementById('description').value = '';
+        await loadExpenses();
     } catch (err) {
-        errEl.textContent   = err.message || 'Could not save entry';
-        errEl.style.display = 'block';
+        showError('formError', err.message || 'Could not save entry');
+    } finally {
+        const btn = document.getElementById('addBtn');
+        btn.disabled = false; btn.textContent = '+ Add Expense';
     }
 }
 
 async function removeExpense(id) {
-    await transactionApi.deleteById(id);
-    expenseItems = expenseItems.filter(i => i.id !== id);
-    renderExpenses();
+    if (!confirm('Remove this expense entry?')) return;
+    try {
+        await transactionApi.deleteById(id);
+        expenseItems = expenseItems.filter(i => i.id !== id);
+        renderExpenses();
+    } catch (err) { alert('Could not remove entry'); }
 }
 
+async function applyFilters() {
+    await loadExpenses({
+        keyword:   document.getElementById('search').value.trim(),
+        category:  document.getElementById('filterCategory').value,
+        startDate: document.getElementById('startDate').value,
+        endDate:   document.getElementById('endDate').value,
+    });
+}
+
+function clearFilters() {
+    ['search','filterCategory','startDate','endDate'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    loadExpenses();
+}
+
+loadCategories();
 loadExpenses();

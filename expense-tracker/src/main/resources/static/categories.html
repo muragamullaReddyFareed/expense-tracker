@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Ledger — Categories</title>
+    <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<header class="navbar">
+    <div class="navbar__brand"><span class="mark">§</span> Ledger</div>
+    <nav class="navbar__links">
+        <a href="/dashboard.html"  class="nav-link">Dashboard</a>
+        <a href="/income.html"     class="nav-link">Income</a>
+        <a href="/expenses.html"   class="nav-link">Expenses</a>
+        <a href="/reports.html"    class="nav-link">Reports</a>
+        <a href="/categories.html" class="nav-link active">Categories</a>
+    </nav>
+    <div class="navbar__user">
+        <span class="navbar__name" id="userName"></span>
+        <button class="btn-signout" onclick="logout()">Sign out</button>
+    </div>
+</header>
+<main class="page">
+    <div class="page-header">
+        <h1>Categories</h1>
+        <p>Create custom categories for income and expenses.</p>
+    </div>
+    <div class="form-card" style="max-width:540px">
+        <h2>Add New Category</h2>
+        <div class="error-banner" id="formError" style="display:none"></div>
+        <div class="error-banner" id="catError"  style="display:none">
+            Could not load categories.
+        </div>
+        <div class="form-row-2">
+            <div class="field">
+                <label for="catName">Category Name</label>
+                <input id="catName" type="text" placeholder="e.g. Freelance, Petrol…"
+                       maxlength="50" onkeydown="if(event.key==='Enter') addCategory()"/>
+            </div>
+            <div class="field">
+                <label for="catType">Type</label>
+                <select id="catType">
+                    <option value="INCOME">Income</option>
+                    <option value="EXPENSE">Expense</option>
+                </select>
+            </div>
+        </div>
+        <button id="addBtn" class="btn btn-accent" onclick="addCategory()">
+            + Add Category
+        </button>
+    </div>
+    <div class="category-grid">
+        <div class="form-card">
+            <h2 style="color:var(--income)">Income Categories</h2>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
+                Custom categories you created. Defaults like Salary and Freelance are always available.
+            </p>
+            <div id="incomeList" class="category-list"></div>
+        </div>
+        <div class="form-card">
+            <h2 style="color:var(--expense)">Expense Categories</h2>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
+                Custom categories you created. Defaults like Groceries and Rent are always available.
+            </p>
+            <div id="expenseList" class="category-list"></div>
+        </div>
+    </div>
+</main>
+<script src="/js/api.js"></script>
+<script src="/js/categories.js"></script>
+</body>
+</html>

@@ -1,39 +1,32 @@
 package com.expensetracker.service;
-
 import com.expensetracker.dto.DashboardResponse;
 import com.expensetracker.entity.TransactionType;
-import com.expensetracker.entity.User;
 import com.expensetracker.repository.TransactionRepository;
 import com.expensetracker.security.AuthenticatedUserProvider;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
-
+import java.util.List;
 @Service
-@RequiredArgsConstructor
 public class DashboardService {
-
     private final TransactionRepository transactionRepository;
-    private final AuthenticatedUserProvider authenticatedUserProvider;
-
+    private final AuthenticatedUserProvider userProvider;
+    public DashboardService(TransactionRepository tr, AuthenticatedUserProvider up) {
+        this.transactionRepository=tr; this.userProvider=up;
+    }
     public DashboardResponse getSummary() {
-        User currentUser = authenticatedUserProvider.getCurrentUser();
-
-        BigDecimal totalIncome = transactionRepository
-                .sumAmountByUserIdAndType(
-                        currentUser.getId(), TransactionType.INCOME);
-
-        BigDecimal totalExpense = transactionRepository
-                .sumAmountByUserIdAndType(
-                        currentUser.getId(), TransactionType.EXPENSE);
-
-        BigDecimal savings = totalIncome.subtract(totalExpense);
-
+        Long uid = userProvider.getCurrentUser().getId();
+        BigDecimal income  = transactionRepository.sumAmountByUserIdAndType(uid, TransactionType.INCOME);
+        BigDecimal expense = transactionRepository.sumAmountByUserIdAndType(uid, TransactionType.EXPENSE);
+        List<DashboardResponse.CategoryBreakdown> incomeBreakdown = transactionRepository
+                .getCategoryBreakdown(uid, TransactionType.INCOME).stream()
+                .map(r -> new DashboardResponse.CategoryBreakdown(
+                        (String)r[0], (BigDecimal)r[1], ((Number)r[2]).longValue())).toList();
+        List<DashboardResponse.CategoryBreakdown> expenseBreakdown = transactionRepository
+                .getCategoryBreakdown(uid, TransactionType.EXPENSE).stream()
+                .map(r -> new DashboardResponse.CategoryBreakdown(
+                        (String)r[0], (BigDecimal)r[1], ((Number)r[2]).longValue())).toList();
         return DashboardResponse.builder()
-                .totalIncome(totalIncome)
-                .totalExpense(totalExpense)
-                .savings(savings)
-                .build();
+                .totalIncome(income).totalExpense(expense).savings(income.subtract(expense))
+                .incomeByCategory(incomeBreakdown).expenseByCategory(expenseBreakdown).build();
     }
 }

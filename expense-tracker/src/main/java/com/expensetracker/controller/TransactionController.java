@@ -1,60 +1,44 @@
 package com.expensetracker.controller;
-
-import com.expensetracker.dto.TransactionRequest;
-import com.expensetracker.dto.TransactionResponse;
+import com.expensetracker.dto.*;
 import com.expensetracker.entity.TransactionType;
 import com.expensetracker.service.TransactionService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-
+import java.time.LocalDate;
 import java.util.List;
-
 @RestController
 @RequestMapping("/api/transactions")
-@RequiredArgsConstructor
 public class TransactionController {
-
     private final TransactionService transactionService;
-
+    public TransactionController(TransactionService transactionService) { this.transactionService=transactionService; }
     @PostMapping("/income")
-    public ResponseEntity<TransactionResponse> addIncome(
-            @Valid @RequestBody TransactionRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(transactionService.addTransaction(
-                        request, TransactionType.INCOME));
+    public ResponseEntity<TransactionResponse> addIncome(@Valid @RequestBody TransactionRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(transactionService.addTransaction(req, TransactionType.INCOME));
     }
-
     @GetMapping("/income")
-    public ResponseEntity<List<TransactionResponse>> getIncome() {
-        return ResponseEntity.ok(
-                transactionService.getByType(TransactionType.INCOME));
+    public ResponseEntity<List<TransactionResponse>> getIncome(
+            @RequestParam(required=false) String keyword,
+            @RequestParam(required=false) String category,
+            @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(transactionService.search(TransactionType.INCOME, keyword, category, startDate, endDate));
     }
-
     @PostMapping("/expenses")
-    public ResponseEntity<TransactionResponse> addExpense(
-            @Valid @RequestBody TransactionRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(transactionService.addTransaction(
-                        request, TransactionType.EXPENSE));
+    public ResponseEntity<TransactionResponse> addExpense(@Valid @RequestBody TransactionRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(transactionService.addTransaction(req, TransactionType.EXPENSE));
     }
-
     @GetMapping("/expenses")
-    public ResponseEntity<List<TransactionResponse>> getExpenses() {
-        return ResponseEntity.ok(
-                transactionService.getByType(TransactionType.EXPENSE));
+    public ResponseEntity<List<TransactionResponse>> getExpenses(
+            @RequestParam(required=false) String keyword,
+            @RequestParam(required=false) String category,
+            @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(transactionService.search(TransactionType.EXPENSE, keyword, category, startDate, endDate));
     }
-
-    @GetMapping
-    public ResponseEntity<List<TransactionResponse>> getAll() {
-        return ResponseEntity.ok(transactionService.getAll());
-    }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        transactionService.delete(id);
-        return ResponseEntity.noContent().build();
+        transactionService.delete(id); return ResponseEntity.noContent().build();
     }
 }
