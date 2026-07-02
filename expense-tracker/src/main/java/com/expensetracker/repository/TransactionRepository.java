@@ -33,4 +33,13 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     List<Object[]> getCategoryBreakdown(@Param("userId") Long userId, @Param("type") TransactionType type);
     @Query("SELECT DISTINCT YEAR(t.transactionDate) FROM Transaction t WHERE t.user.id = :userId ORDER BY YEAR(t.transactionDate) DESC")
     List<Integer> getAvailableYears(@Param("userId") Long userId);
+    // Total expense spent in a given month/year
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t " +
+            "WHERE t.user.id = :userId AND t.type = 'EXPENSE' " +
+            "AND YEAR(t.transactionDate) = :year " +
+            "AND MONTH(t.transactionDate) = :month")
+    java.math.BigDecimal sumExpenseByUserAndMonth(
+            @Param("userId") Long userId,
+            @Param("month") int month,
+            @Param("year") int year);
 }

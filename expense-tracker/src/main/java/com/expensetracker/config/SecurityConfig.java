@@ -37,9 +37,10 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/","/index.html","/register.html","/dashboard.html",
-                                "/income.html","/expenses.html","/reports.html","/categories.html",
-                                "/css/**","/js/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/register.html",
+                                "/dashboard.html", "/income.html", "/expenses.html",
+                                "/reports.html", "/categories.html", "/budget.html",
+                                "/css/**", "/js/**").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

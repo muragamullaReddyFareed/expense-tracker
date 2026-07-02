@@ -50,6 +50,12 @@ const reportApi = {
     getAvailableYears: ()    => request('GET', '/reports/years'),
 };
 
+// ── Budget ───────────────────────────────────────────────────────
+const budgetApi = {
+    setMonthly:  (p)           => request('POST',   '/budgets/monthly', p),
+    getMonthly:  (month, year) => request('GET',    '/budgets/monthly?month=' + month + '&year=' + year),
+    deleteById:  (id)          => request('DELETE', '/budgets/' + id),
+};
 function requireAuth() {
     if (!getToken()) { window.location.href = '/index.html'; return false; }
     return true;

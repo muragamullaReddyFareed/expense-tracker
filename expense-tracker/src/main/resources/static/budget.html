@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Ledger — Budget</title>
+    <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<header class="navbar">
+    <div class="navbar__brand"><span class="mark">§</span> Ledger</div>
+    <nav class="navbar__links">
+        <a href="/dashboard.html"  class="nav-link">Dashboard</a>
+        <a href="/income.html"     class="nav-link">Income</a>
+        <a href="/expenses.html"   class="nav-link">Expenses</a>
+        <a href="/budget.html"     class="nav-link active">Budget</a>
+        <a href="/reports.html"    class="nav-link">Reports</a>
+        <a href="/categories.html" class="nav-link">Categories</a>
+    </nav>
+    <div class="navbar__user">
+        <span class="navbar__name" id="userName"></span>
+        <button class="btn-signout" onclick="logout()">Sign out</button>
+    </div>
+</header>
+
+<main class="page">
+    <div class="page-header">
+        <h1>Monthly Budget</h1>
+        <p>Set and track your overall monthly spending limit.</p>
+    </div>
+
+    <!-- Month / Year Selector -->
+    <div class="report-controls">
+        <label style="font-size:14px;font-weight:600;color:var(--ink-soft)">
+            Month
+        </label>
+        <select class="report-year-select" id="monthSelect">
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+        </select>
+        <select class="report-year-select" id="yearSelect"></select>
+    </div>
+
+    <!-- Set Budget Form -->
+    <div class="form-card">
+        <h2>Set Monthly Budget</h2>
+        <div class="error-banner" id="formError" style="display:none"></div>
+        <div class="form-row-2">
+            <div class="field">
+                <label for="budgetAmount">Budget Amount (₹)</label>
+                <input id="budgetAmount" type="number"
+                       min="0.01" step="0.01"
+                       placeholder="e.g. 30000"/>
+            </div>
+            <div class="field" style="display:flex;align-items:flex-end">
+                <button class="btn btn-accent btn-full"
+                        onclick="saveMonthlyBudget()">
+                    Save Budget
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Summary -->
+    <div id="budgetSummary"></div>
+
+</main>
+
+<script src="/js/api.js"></script>
+<script src="/js/budget.js"></script>
+</body>
+</html>
